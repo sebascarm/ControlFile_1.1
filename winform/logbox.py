@@ -1,7 +1,16 @@
-import pygame
+# -*- coding: utf-8 -*-
 
+###########################################################
+### CLASE LOGBOX V1.1                                   ###
+###########################################################
+### ULTIMA MODIFICACION DOCUMENTADA                     ###
+### 25/03/2021                                          ###
+### Este encabezado                                     ###
+###########################################################
+
+import pygame
 from winform.base.objetogral import ObjetoGral
-from winform.base.funciones import Brillo
+
 
 class Logbox(ObjetoGral):
     def __init__(self, C_Form):

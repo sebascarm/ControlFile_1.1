@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### CLASE DRAWBOX (Para dibujar en pantalla)            ###
+### CLASE DRAWBOX V1.0 (Para dibujar en pantalla)       ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
 ### 15/01/2021                                          ###

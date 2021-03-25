@@ -1,8 +1,15 @@
+# -*- coding: utf-8 -*-
+
+###########################################################
+### CLASE CHECKBOX V1.1                                 ###
+###########################################################
+### ULTIMA MODIFICACION DOCUMENTADA                     ###
+### 11/03/2021                                          ###
+### Propiedad eneable                                   ###
+###########################################################
+
 import pygame
-
 from winform.base.objetogral import ObjetoGral
-from winform.base.funciones import Brillo
-
 
 class Checkbox(ObjetoGral):
     def __init__(self, C_Form):

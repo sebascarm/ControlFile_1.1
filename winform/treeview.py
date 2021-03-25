@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### CLASE Tree View                                    ###
+### CLASE Tree View V1.0                                ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
-### 19/03/2021                                          ###
+### 23/03/2021                                          ###
 ### Creacion                                            ###
 ###########################################################
 import string
@@ -13,98 +13,173 @@ import os
 import time
 import pygame
 from winform.base.objetogral import ObjetoGral
-from winform.icons.iconos import folder_icon
 from winform.textbox import Textbox
 from winform.labelicon import LabelIcon
-from winform.icons import iconos
+from winform.base.thread_admin import ThreadAdmin
+
 
 class TreeView(ObjetoGral):
     def __init__(self, form):
-        super().__init__(form)      # instanciamos la clase padre
+        super().__init__(form)  # instanciamos la clase padre
         # propiedades internas
-        self.folder     = ""
-        self.drives     = []    # lista de unidades
-        self.folders    = []    # lista de directorios visibles
-        self.files      = []    # lista de archivos visibles
-        self.iconos     = []    # lista de objetos iconos
-        self.labelicon  = []    # lista de objeto labelicon
-        self.fila       = 0
-        self.columna    = 0
-        self.superficie_int = ''    # type: pygame.Surface # modificamos la surface para usar una propia
+        self.folder = ""
+        self.drives = []  # lista de unidades
+        self.ref_label = []  # lista de labeliconos
+        self.info_icons = []  # columna, id_control, texto, ruta, icon, icon2 // sacamos la fila
+        self.superficie_int = ''  # type: pygame.Surface # modificamos la surface para usar una propia
+        self.area_int = (0, 0, 0, 0)  # para definir el area interna relativa, distito a recuadro
+        self.y_int = 0  # para desplazar
+        self.th_espera = ThreadAdmin()
+        self.tmp_carpetas = []
+        self.tmp_archivos = []
+        self.datos_obtenidos = False
+        self.max_alto = 5000
 
     def config(self, text, x, y, ancho, alto, folder=''):
         super().config(x, y, ancho, alto, text, False)
         self.folder = folder
-
-        self.textbox = Textbox(self.form)
-        self.textbox.config("", x+4, y+4, ancho-8, 20)
-        self.superficie_int = pygame.Surface((self.ancho, self.alto))
-
+        self.area_int = (0, 0, self.ancho, self.alto)
+        self.superficie_int = pygame.Surface((self.ancho, self.max_alto))  # dibujamos (cambiar el 1000 todo
+        self.y_int = self.y
 
     def dibujar(self):
-        pygame.draw.rect(self.superficie_int, self.color, (0,0,self.ancho, self.alto), 0)  # dibujamos
-        self.__dibujar_unidades__()
+        self.__cargar_unidades__()
         self.__dibujar__()
 
-    def __dibujar_unidades__(self):
-        self.fila = 0
-        self.columna = 0
-        self.drives = self.get_drives()
-        for drive in self.drives:
-            self.columna = 0
-            self.__dibujar_label_icon__(self.fila, self.columna, "drive", "circulo", drive)
-            self.fila += 1
+    def __dibujar__(self):
+        # borrar todos
+        pygame.draw.rect(self.superficie_int, self.color, (0, 0, self.ancho, self.max_alto), 0)
+        # generar y cagar labelincon
+        for indice in range(len(self.info_icons)):
+            columna, id_control, texto, ruta, icon, icon2 = self.info_icons[indice]
+            # creamos y dibujamos el label
+            objeto_id = self.__crear_labelicon__(indice, columna, icon, icon2, texto)
+            # actualizamos el el info_icon con el id del control
+            self.info_icons[indice] = columna, objeto_id, texto, ruta, icon, icon2
+        # Dibujar la superficie interna en la general
+        self.superficie.blit(self.superficie_int, (self.x, self.y), self.area_int)
+        self.actualizar()
 
-    def funcion_accion(self, id_control):
-        fila, label  = self.__obtener_fila__(id_control)
-        path = label.text + "/"
-        print(path)
-        self.folders = self.get_folders(path)
-        self.files   = self.get_files(path)
-        print(self.folders)
-        print(self.files)
-        self.__dibujar_label_icon__(fila, 0, "drive", "flecha_abajo", label.text)
-        for folder in self.folders:
-            self.columna = 1
-            fila += 1
-            self.__dibujar_label_icon__(fila, self.columna, "folder", "circulo", folder)
-        """
-        for file in self.files:
-            self.columna = 1
-            fila += 1
-            self.__dibujar_label_icon__(fila, self.columna, "files", "circulo", file)
-        """
+    def __cargar_unidades__(self):
+        columna = 0
+        drives = self.get_drives()
+        self.info_icons.clear()
+        for fila in range(len(drives)):
+            unidad = drives[fila]
+            self.info_icons.append((columna, -1, unidad, unidad, "drive", "circulo"))
+
+    def __limpiar_ojetos__(self):
+        for label in self.ref_label:
+            label.delete()
+        self.ref_label.clear()
+
+    def evento_accion(self, id_control):
+        # borrar objetos
+        self.__limpiar_ojetos__()
+        fila, columna, id_objeto, texto, ruta, ico, icon2 = self.__obtener_info__(id_control)
+        # almacenar incial
+        info_tmp = self.__caga_inicial__(fila)
+        # determinar modificacion
+        if icon2 == "flecha_abajo":     # cerrar directorio
+            # almacena objeto modificado
+            info_tmp.append((columna, id_objeto, texto, ruta, ico, "flecha_derecha"))
+            # almacenar final
+            info_tmp.extend(self.__cargar_final2__(fila + 1, columna))
+        else:
+            # almacena objeto modificado
+            info_tmp.append((columna, id_objeto, texto, ruta, ico, "flecha_abajo"))
+            # cargar nuevos
+            info_tmp.extend(self.__cargar_nuevos__(ruta, columna + 1))
+            # almacenar final
+            info_tmp.extend(self.__cargar_final__(fila + 1))
+        self.info_icons = []
+        self.info_icons.extend(info_tmp)
         self.__dibujar__()
 
-    def __dibujar_label_icon__(self, fila, columna, icon, icon2, texto):
+    def __caga_inicial__(self, fila_final):
+        info_tmp = []
+        for indice in range(len(self.info_icons)):
+            if indice < fila_final:
+                info_tmp.append(self.info_icons[indice])  # devuelve la fila
+        return info_tmp
+
+    def __cargar_final__(self, fila_inicial):
+        info_tmp = []
+        for indice in range(len(self.info_icons)):
+            if indice >= fila_inicial:
+                info_tmp.append((self.info_icons[indice]))  # devuelve la fila
+        return info_tmp
+
+    def __cargar_final2__(self, fila_inicial, columna_menor):
+        info_tmp = []
+        for indice in range(len(self.info_icons)):
+            if indice >= fila_inicial:
+                if self.info_icons[indice][0] <= columna_menor:
+                    info_tmp.append((self.info_icons[indice]))  # devuelve la fila
+        return info_tmp
+
+    def __cargar_nuevos__(self, ruta, columna):
+        info_tmp = []
+        self.datos_obtenidos = False
+        self.th_espera.start(self.__th_carpetas_archivos__, ruta, 'OBTENER_ARCHIVOS')
+        # esperamos x 2 segundos
+        for tiempo in range(10):
+            if self.datos_obtenidos:
+                break
+            time.sleep(0.1)
+        self.th_espera.close()
+        for carpeta in self.tmp_carpetas:
+            info_tmp.append((columna, -1, carpeta[0], carpeta[1], "folder", "circulo"))
+        for archivo in self.tmp_archivos:
+            info_tmp.append((columna, -1, archivo[0], archivo[1], "file", ""))
+        return info_tmp
+
+    def __th_carpetas_archivos__(self, ruta):
+        self.tmp_carpetas = []
+        self.tmp_archivos = []
+        try:
+            self.tmp_carpetas = self.get_folders(ruta)
+            self.tmp_archivos = self.get_files(ruta)
+        except:
+            print("No se pueden cargar los archivos y carpetas")
+        self.datos_obtenidos = True
+
+    def __crear_labelicon__(self, fila, columna, icon, icon2, texto):
+        """ Al crear el objeto devolvemos el ID creado
+        """
         labelicon = LabelIcon(self.form)
-        x = (columna * 20) + 4
-        y = (fila * 20) + 30
-        labelicon.config(texto, x, y, 150, 12, icon, icon2, self.color_foco)
+        if icon2: x = (columna * 20) + 4
+        else:     x = (columna * 20) + 20
+        y = (fila * 20) + 10
+        ancho = 200
+        alto = 14
+        labelicon.config(texto, x, y, ancho, alto, icon, icon2, self.color)
         labelicon.superficie = self.superficie_int
         # cambiamos el rectangulo para cuando revisa el click (posicion real)
-        labelicon.rectangulo = (self.x + x, self.y+y, self.ancho, self.alto)
-        labelicon.accion(self.funcion_accion)
+        self.__actualizar_poslabel__(labelicon)
+        # si es archivo no se asigna accion:
+        if icon2:
+            labelicon.accion(self.evento_accion)
         labelicon.dibujar()
-        self.labelicon.append((fila, labelicon))
+        objeto_id = labelicon.id
+        # agregamos a la referencia
+        self.ref_label.append(labelicon)
+        return objeto_id
 
-    def __obtener_fila__(self, id_control):
+    def __obtener_info__(self, id_control):
         # retorna la fila y el objeto
         resul = -1
         # buscar control
-        for labels in self.labelicon:
-            fila, labelicon = labels
-            if labelicon.id == id_control:
-                resul = fila, labelicon
+        for fila, info in enumerate(self.info_icons):
+            columna, id_objeto, texto, ruta, ico, icon2 = info
+            if id_objeto == id_control:
+                resul = fila, columna, id_objeto, texto, ruta, ico, icon2
                 break
         return resul
-
-
 
     def get_drives(self):
         drives = []
         bitmask = windll.kernel32.GetLogicalDrives()
-        print("BITMASK: " + str(bitmask))
         for letter in string.ascii_uppercase:
             if bitmask & 1:
                 drives.append(letter + ":")
@@ -112,24 +187,88 @@ class TreeView(ObjetoGral):
         return drives
 
     def get_folders(self, path):
+        """Devuelve una lista con nombres y ruta aparte
+        """
         folders = []
-        contenido = os.listdir(path)
+        ruta = path + "/"
+        print(ruta)
+        contenido = os.listdir(ruta)
         for item in contenido:
-            if os.path.isdir(path + item):
-                folders.append(item)
-        return  folders
+            if os.path.isdir(ruta + item):
+                folders.append((item, ruta + item))
+        return folders
 
     def get_files(self, path):
+        """Devuelve una lista con nombres y ruta aparte
+        """
         files = []
-        contenido = os.listdir(path)
+        ruta = path + "/"
+        contenido = os.listdir(ruta)
         for item in contenido:
-            if os.path.isfile(path + item):
-                files.append(item)
+            if os.path.isfile(ruta + item):
+                files.append((item, ruta + item))
         return files
 
-    def __dibujar__(self):
-        # Dibujar la superficie interna en la general
-        self.superficie.blit(self.superficie_int, (self.x, self.y))
+    def __desplazar_area__(self, desplazamiento):
+        """ :param desplazamiento: unidades de desplazamiento
+        """
+        habilitado = False
+        desplaza = 20 * desplazamiento
+        x, y, ancho, alto = self.area_int
+        y += desplaza
+        visible = self.alto - 40    # el 60 es un parametro que no se porque
+        maximo = len(self.info_icons) * 20 - y
+        if (desplazamiento < 0) and (y >= 0):
+            habilitado = True
+        elif (desplazamiento > 0) and (maximo > visible):
+            habilitado = True
+        if habilitado:
+            self.area_int = (x, y, ancho, alto)
+            print(self.area_int)
+            for label in self.ref_label:
+                self.__actualizar_poslabel__(label)
+
+    def __actualizar_poslabel__(self, label):
+        x_real = self.x + label.x - self.area_int[0]
+        y_real = self.y + label.y - self.area_int[1]  # obtenemos el y del area interna
+        x_max = self.x + self.ancho
+        y_max = self.y + self.alto
+        # coordenadas reales
+        # minimos
+        if y_real < self.y:
+            y_real = self.y
+        if x_real < self.x:
+            x_real = self.x
+        # maximos
+        if x_real > x_max:
+            x_real = x_max
+        if y_real > y_max:
+            y_real = y_max
+        # ancho real
+        ancho_real = label.ancho
+        alto_real = label.alto
+        if x_real + label.ancho > x_max:
+            ancho_real = x_max - x_real
+        if y_real + label.alto > y_max:
+            alto_real = y_max - y_real
+        # resultados
+        label.rectangulo = x_real, y_real, ancho_real, alto_real
+        label.rect_foco = x_real - 1, y_real - 1, ancho_real + 1, alto_real + 1
+
+    ###################################
+    ### EVENTOS SCROLL              ###
+    ###################################
+    def evento_mouse_scrollup(self):
+        self.__desplazar_area__(-1)
+        # redibujar
+        self.superficie.blit(self.superficie_int, (self.x, self.y), self.area_int)
+        self.actualizar()
+
+    def evento_mouse_scrolldown(self):
+        self.__desplazar_area__(1)
+        # redibujar
+        self.superficie.blit(self.superficie_int, (self.x, self.y), self.area_int)
+        self.actualizar()
 
     ###################################
     ### EVENTOS TECLAS              ###

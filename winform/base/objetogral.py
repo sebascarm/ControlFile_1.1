@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### Objeto Padre General V2.1                           ###
+### Objeto Padre General V2.2                           ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
-### 19/03/2021                                          ###
+### 25/03/2021                                          ###
+### Se agrega metodo Delete para borrar correctamente   ###
+### Se agrega metodo de actualizacion                   ###
 ### Correccion inicial de foco (sin foco)               ###
 ### Correcciones generales y type.                      ###
 ### Se agrega el update para actualizar cuando es llam. ###
@@ -52,7 +54,7 @@ class ObjetoGral(object):
         # comunes en objetos
         self.foco       = False     # estado actual de foco
         self.sin_foco   = False     # elemento que es foqueable o no
-        self.estado     = 0         # 0 fuera 1 dentro 2 precionado
+        self.estado     = -1        # -1: recien creado 0: fuera 1: dentro 2: precionado
         self.id         = 0         # id del objeto
         self.prev_obj   = ''        # type: ObjetoGral   #puntero hacia el objeto previo
         self.next_obj   = ''        # type: ObjetoGral   # puntero hacia el proximo objeto
@@ -62,7 +64,8 @@ class ObjetoGral(object):
         self.actualizar_cuadro = False
 
     def __del__(self):
-        print("OBJETO ELIMINADO ID: " + str(self.id) + " " + str(self.__class__.__name__))
+        print("OBJETO ELIMINADO ID: " + str(self.id) + " " + str(self.__class__.__name__) + " " + self.text)
+
 
     def config(self, x, y, ancho, alto, text='', alto_contraste=True, foco=True):
         """Configuracion del objeto
@@ -94,7 +97,7 @@ class ObjetoGral(object):
         # Rectangulo de linea relativo
         self.line_rect = 0, 0, self.ancho, self.line_alto
         # agregamos el cuadro al total (revisar ya que tiene q dibujar cuando hay cambios)
-        self.cuadros_total.append(self.rectangulo)
+        # self.cuadros_total.append(self.rectangulo)
         # agregamos el objeto al formulario (revisar en caso q no tenga foco)
         self.form.objetos.append(self)
         # agregar indices solo si es foqueable
@@ -103,7 +106,8 @@ class ObjetoGral(object):
         else:
             self.sin_foco = True
         self.__agregar_indices__()
-        print("OBJETO CREADO ID: " + str(self.id) + " " + str(self.__class__.__name__))
+
+        # print("OBJETO CREADO ID: " + str(self.id) + " " + str(self.__class__.__name__))
 
 
     def __agregar_indices__(self):
@@ -117,15 +121,29 @@ class ObjetoGral(object):
             self.form.objetos[self.id - 1].next_obj = self  # next previo apunta a este objeto
             self.form.objetos[0].prev_obj = self            # prev del inicial apunta a este objeto
 
+    def delete(self):
+        """ Permite eliminar el objeto, realiza desasociacion de los
+            elementos para poder borrar el objeto
+        """
+        # Eliminar indice
+        print("ELIMINAR OBJETO ID: " + str(self.id))
+        print("RECONECTAR OBJETO PREV ID: " + str(self.prev_obj.id) + " A NEXT " + str(self.next_obj.id))
+        self.prev_obj.next_obj = self.next_obj
+        print("RECONECTAR OBJETO NEXT ID: " + str(self.next_obj.id) + " A PREV " + str(self.prev_obj.id))
+        self.next_obj.prev_obj = self.prev_obj
+        # eliminar label_int
+        del self.label_int
+        # Eliminar refencia en lista Form objetos
+        print("ELIMINAR REFERENCIA EN FORM OBJETOS: " + str(self.id))
+        self.form.objetos.remove(self)
+
     ########################################
     ### LLAMAR PARA ACTUALIZAR DIBUJADO  ###
     ########################################
-    def desactualizar(self):
-        del self.cuadros_total[:]
     def actualizar(self):
-        # agrega el rectangulo para que sea actualizado por el update del screen
-        if self.cuadros_total.count(self.rectangulo) == 0:
-            self.cuadros_total.append(self.rectangulo)
+        # Se utiliza el cuadro de foco para incluir el margen
+        if self.cuadros_total.count(self.rect_foco) == 0:
+            self.cuadros_total.append(self.rect_foco)
 
     ########################################
     ### METODOS COMUNES                  ###
@@ -174,7 +192,7 @@ class ObjetoGral(object):
     ###################################
     # define la funcion a ejecutar al hacer click
     def accion(self, funcion):
-        print("acion definida")
+        # print("acion definida")
         self.funcion = funcion
 
     ###################################
@@ -186,6 +204,12 @@ class ObjetoGral(object):
     def evento_mouse_click(self):
         self.evento_foco(False)
         self.funcion(self.id)
+
+    def evento_mouse_scrollup(self):
+        print("Scroll up")
+
+    def evento_mouse_scrolldown(self):
+        print("Scroll down")
 
     ###################################
     ### EVENTOS POR DEFECTO TECLADO ###

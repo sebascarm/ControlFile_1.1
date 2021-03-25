@@ -1,7 +1,13 @@
-import pygame
+###########################################################
+### CLASE TEXTBOX 1.1                                   ###
+###########################################################
+### ULTIMA MODIFICACION DOCUMENTADA                     ###
+### 11/03/2021                                          ###
+### Actualiza elemeto                                   ###
+###########################################################
 
+import pygame
 from winform.base.objetogral import ObjetoGral
-from winform.base.funciones import Brillo
 
 class Textbox(ObjetoGral):
     def __init__(self, C_Form):

@@ -29,7 +29,7 @@ class Form(object):
         self.coef_tamano= C_Screen.coef_tamano
         self.margen     = 10
         self.ventana    = ""
-        self.objetos    = [ ]   #lista vacia
+        self.objetos    = []   #lista vacia
         self.enable     = True
 
         self.cuadro      = (0,0,0,0)

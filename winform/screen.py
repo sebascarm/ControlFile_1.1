@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### CLASE SCREEN  V1.3                                  ###
+### CLASE SCREEN  V1.4                                  ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
-### 07/02/2020                                          ###
+### 25/03/2021                                          ###
+### Dibuja solo elementos actualizados y limpia         ###
 ### Dibuja objetos directamente                         ###
 ### Llama al metodo dibujar directamente                ###
 ### Correccion al faltar icono                          ###
@@ -14,6 +15,8 @@ import time
 import pygame
 
 from winform.base.eventos import eventos
+
+import random   # eliminar
 
 class Screen:
     """Pantalla pricipal
@@ -77,9 +80,17 @@ class Screen:
                 time.sleep(0.015)
 
     def update(self):
+        # para tests de elementos que se dibujan
+        # color = (random.randrange(255), random.randrange(255), random.randrange(255))
+        # for cuadro in self.cuadros:
+        #    pygame.draw.rect(self.superficie, color, cuadro, 1)
+        # for formu in self.formularios:
+        #    for objeto in formu.objetos:
+        #        pygame.draw.rect(self.superficie, color, objeto.rectangulo, 1)
+
+        # fin de tests
         pygame.display.update(self.cuadros)
         # vaciamos la lista (se debera crear sobre cada elemento que necesite actualizar)
-        #del self.cuadros[:]
         self.cuadros.clear()
 
     def dibuja_elementos(self):
@@ -92,7 +103,7 @@ class Screen:
                 objeto.dibujar()
 
     def loop(self):
-        #dibujar elementos 
+        # dibujar elementos
         self.dibuja_elementos()
         self.update()
         loope = True

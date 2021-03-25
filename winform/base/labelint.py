@@ -5,6 +5,7 @@
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
 ### 19/03/2021                                          ###
+### Cambio de nombre sin _                              ###
 ### Correccion en alineacion vertical                   ###
 ### Correccion de alineacion en SetText                 ###
 ###########################################################
@@ -120,4 +121,6 @@ class LabelInt(object):
         else:
             superficie.blit(self.label, self.x_y)
             
-            
+    def __del__(self):
+        pass
+        # print("LABEL INT ELIMINADO '" + str(self.texto) + "' " + str(self.__class__.__name__))

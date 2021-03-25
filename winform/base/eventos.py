@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### EVENTOS V1.1                                        ###
+### EVENTOS V1.2                                        ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
 ### 10/03/2021                                          ###
+### Evento mouse scroll y se analiza estado -1 (nuevo)  ###
+### Se incorporta evento click release                  ###
 ### Se ocultan algunos prints para hacer un mejor dbug  ###
 ###########################################################
 
@@ -42,7 +44,7 @@ def evento_objeto(event, objeto):
     if event.type == pygame.MOUSEMOTION:
         coordenada = event.pos 
         # revisar ESTADO dentro
-        if objeto.estado == 0:  # Estaba afuera
+        if (objeto.estado == 0) or (objeto.estado == -1):  # Estaba afuera o desconocido
             if Esta_Adentro(objeto.rectangulo, coordenada):
                 # print("En objeto") # para DEBUG
                 try:
@@ -63,12 +65,32 @@ def evento_objeto(event, objeto):
                     # print("objeto sin evento MOUSE MOTION") # para DEBUG
     # Evento click
     if event.type == pygame.MOUSEBUTTONDOWN:
+        if objeto.id == 2:
+            print("OBJETO EN EVENTO")
+            print("ESTADO" + str(objeto.estado))
+        boton = event.button
+        # 1 - left    click
+        # 2 - middle  click
+        # 3 - right   click
+        # 4 - scroll  up
+        # 5 - scroll  down
+        # revisar si el estado es desconocido para elementos nuevos
+        if objeto.estado == -1:
+            # revisar si esta dentro y cambiar el estado
+            coordenada = event.pos
+            if Esta_Adentro(objeto.rectangulo, coordenada):
+                objeto.estado = 1
         # revisar si esta adentro
-        if objeto.estado == 1:  #Estaba adentro
+        if objeto.estado == 1:  # Estaba adentro
             print("Objeto Presionado ID: " + str(objeto.id) + " " + str(objeto.__class__.__name__))
             try:
                 objeto.estado = 2
-                objeto.evento_mouse_click()
+                if boton == 1:
+                    objeto.evento_mouse_click()
+                elif boton == 4:
+                    objeto.evento_mouse_scrollup()
+                elif boton == 5:
+                    objeto.evento_mouse_scrolldown()
             except:
                 pass
                 # print("objeto sin evento BOTON DOWN")

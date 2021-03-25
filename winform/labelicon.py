@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### CLASE Label Icon                                    ###
+### CLASE LABELICON V1.1                                ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
-### 18/03/2021                                          ###
+### 23/03/2021                                          ###
+### Admite 2 iconos                                     ###
 ### Creacion                                            ###
 ###########################################################
 
@@ -31,17 +32,16 @@ class LabelIcon(ObjetoGral):
         self.icon2 = icon2
         self.color_back = color_back
         if icon2:
-            x = self.x + (self.alto * 2.5) + 4
-            self.rect_tx   = x, self.y, (self.ancho - self.x), self.alto
+            desp = (self.alto * 2.5) + 4
+            self.rect_tx   = self.x + desp, self.y, (self.ancho - desp), self.alto
         else:
-            x = self.x + (self.alto * 1.5) + 4
-            self.rect_tx = x, self.y, (self.ancho - self.x), self.alto
-
+            desp = (self.alto * 1.5) + 4
+            self.rect_tx = self.x + desp, self.y, (self.ancho - desp), self.alto
+        self.label_int.superficie = self.superficie
         self.label_int.config(self.text, self.color_text,
                               self.rect_tx,
                               "izquierda", "abajo",
                               self.text_size)
-
 
     def dibujar(self):
         self.__dibujar__()
@@ -71,7 +71,9 @@ class LabelIcon(ObjetoGral):
                 ancho = self.alto * 1.5
                 iconos.drive_icon(self.superficie, x_ico, self.y, ancho, self.alto, self.color)
             elif self.icon == "file":
-                ancho = self.alto * 0.8
+                x_ico += self.alto  * 0.5
+                ancho  = self.alto  * 0.9
+
                 iconos.file_icon(self.superficie, x_ico, self.y, ancho, self.alto, self.color)
         self.label_int.superficie = self.superficie
         self.label_int.dibujar()

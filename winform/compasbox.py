@@ -1,9 +1,17 @@
+# -*- coding: utf-8 -*-
+
+###########################################################
+### CLASE COMPASBOX V1.1                                ###
+###########################################################
+### ULTIMA MODIFICACION DOCUMENTADA                     ###
+### 11/03/2021                                          ###
+### Actualizar control                                  ###
+###########################################################
+
 import pygame
 from pygame import gfxdraw
 from winform.base.funciones import posLineRadio
-
 from winform.base.objetogral import ObjetoGral
-from winform.base.funciones import Brillo
 
 
 class Compasbox(ObjetoGral):

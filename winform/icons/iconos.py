@@ -1,8 +1,18 @@
+###########################################################
+### FUNCIONES ICONOS V1.0                               ###
+###########################################################
+### ULTIMA MODIFICACION DOCUMENTADA                     ###
+### 23/03/2021                                          ###
+### Creacion                                            ###
+###########################################################
+
 import pygame
 from pygame import gfxdraw
 
+
 def folder_icon(superficie, x, y, ancho, alto, color):
     # coordenadas
+    alto -=1
     alto_ico = alto / 4
     ancho_ico = ancho / 1.5
     y1 = y + alto_ico
@@ -16,7 +26,8 @@ def folder_icon(superficie, x, y, ancho, alto, color):
 
 
 def drive_icon(superficie, x, y, ancho, alto, color):
-    alto_ico = alto/2.5
+    alto -= 1
+    alto_ico = (alto/2.5)
     y1 = y + alto_ico
     x2 = x + alto_ico
     x3 = (x + ancho) - alto_ico
@@ -26,7 +37,7 @@ def drive_icon(superficie, x, y, ancho, alto, color):
     puntos = [(x, y1), (x2, y), (x3, y), (x4, y1), (x4, y5), (x, y5)]
     pygame.draw.polygon(superficie, color, puntos)
     # dibugar poligonos cuadro interno
-    rect   = x+1, y1+1, ancho-2, alto - (alto/2.5)
+    rect   = x+1, y1+1, ancho-2, alto - (alto/2.5)-1
     pygame.draw.rect(superficie, (0, 0, 0), rect, 0)
     # dibugar poligonos luz
     pos_ini = x+(ancho*3/4), y+(alto*3/4)

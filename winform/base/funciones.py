@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+
+###########################################################
+### FUNCIONES PARA WINFORM V2.0                         ###
+###########################################################
+### ULTIMA MODIFICACION DOCUMENTADA                     ###
+### 25/03/2021                                          ###
+### Nuevas funciones incorporadas                       ###
+###########################################################
+
 
 import math #para usar seno y conseno
 
@@ -102,8 +112,6 @@ def dist_entre_puntos(punto_a, punto_b):
         seno        = math.sin(angulo)
         hipotenusa  = opuesto / seno
     return abs(hipotenusa)
-
-
 
 def sumar_angulo(angulo_a, angulo_b):
     resul = angulo_a + angulo_b
