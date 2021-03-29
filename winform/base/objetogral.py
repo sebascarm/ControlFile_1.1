@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### Objeto Padre General V2.2                           ###
+### Objeto Padre General V2.3                           ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
 ### 25/03/2021                                          ###
+### Generacion de indice correcta                       ###
+### Borrado correcto                                    ###
+### Generacion de objeto tipo hijo                      ###
+### opcion set focus                                    ###
 ### Se agrega metodo Delete para borrar correctamente   ###
 ### Se agrega metodo de actualizacion                   ###
 ### Correccion inicial de foco (sin foco)               ###
@@ -16,11 +20,8 @@
 """
 
 import pygame
-# objetos internos
 from winform.base.labelint import LabelInt
-# funciones
 from winform.base.funciones import AutoBrillo
-# from winform.base.funciones import Esta_Adentro
 from winform.form import Form   # para Type
 
 
@@ -28,6 +29,7 @@ class ObjetoGral(object):
     def __init__(self, form):
         # Propieades publicas comunes
         self.text = ''
+        self.hijo = False              # Propiedad para establecer si pertenece a un objeto compuesto
         # Propiedades publicas de posicion
         self.x = 0
         self.y = 0
@@ -55,7 +57,7 @@ class ObjetoGral(object):
         self.foco       = False     # estado actual de foco
         self.sin_foco   = False     # elemento que es foqueable o no
         self.estado     = -1        # -1: recien creado 0: fuera 1: dentro 2: precionado
-        self.id         = 0         # id del objeto
+        self.id         = -1         # id del objeto
         self.prev_obj   = ''        # type: ObjetoGral   #puntero hacia el objeto previo
         self.next_obj   = ''        # type: ObjetoGral   # puntero hacia el proximo objeto
         # superficie Gral
@@ -64,7 +66,7 @@ class ObjetoGral(object):
         self.actualizar_cuadro = False
 
     def __del__(self):
-        print("OBJETO ELIMINADO ID: " + str(self.id) + " " + str(self.__class__.__name__) + " " + self.text)
+        print("OBJETO ELIMINADO ID: " + str(self.id) + " " + str(self.__class__.__name__) + " " + self.text + " Form: " + self.form.nombre)
 
 
     def config(self, x, y, ancho, alto, text='', alto_contraste=True, foco=True):
@@ -89,6 +91,10 @@ class ObjetoGral(object):
         # parametros de posicion
         self.x = int(x * self.form.coef_tamano)
         self.y = int(y * self.form.coef_tamano)
+        # obtener posicion real en base al formulario. X siempre es la posicion real
+        if not self.hijo:
+            self.x += self.form.posicion[0]
+            self.y += self.form.posicion[1]
         self.ancho  = int(ancho * self.form.coef_tamano)
         self.alto   = int(alto  * self.form.coef_tamano)
         # posicion general
@@ -107,35 +113,58 @@ class ObjetoGral(object):
             self.sin_foco = True
         self.__agregar_indices__()
 
-        # print("OBJETO CREADO ID: " + str(self.id) + " " + str(self.__class__.__name__))
+        print("OBJETO CREADO ID: " + str(self.id) + " " + str(self.__class__.__name__) + " " + str(self.text) + " Form: " + self.form.nombre)
 
 
     def __agregar_indices__(self):
-        # agregamos el ID
-        elementos = len(self.form.objetos)
-        self.id   = elementos - 1
+        # buscamos id libre
+        indice_libre = -1
+        for indice in range(len(self.form.objetos)):
+            ids = self.form.objetos[indice].id
+            if indice != ids:
+                indice_libre = indice
+                break
+        self.id   = indice_libre
         # agregamos los indices
-        self.next_obj = self.form.objetos[0]    # al principio apuntamos el siguiente al primer objeto
-        if elementos > 1:
-            self.prev_obj = self.form.objetos[self.id - 1]  # prev apunta al objeto previo
-            self.form.objetos[self.id - 1].next_obj = self  # next previo apunta a este objeto
-            self.form.objetos[0].prev_obj = self            # prev del inicial apunta a este objeto
+        # Elemento NEXT
+        # print("ID: " + str(self.id))
+        if len(self.form.objetos) < 2:  # unico elemeto
+            self.next_obj = self
+            self.prev_obj = self
+        else:                           # mas de 1 elemeto
+            # siempre es el ultimo elemento, va a apuntar al primero
+            self.next_obj = self.form.objetos[0]  # apuntamos al primero
+            self.form.objetos[0].prev_obj = self
+            # Elemento PREV
+            if self.id == 0:                                    # solo si el id = 0
+                self.prev_obj = self.form.objetos[-2]           # apuntamos al ultimo
+                self.form.objetos[-1].next_obj = self
+            else:
+                self.prev_obj = self.form.objetos[self.id - 1]  # apuntamos al anterior
+                self.form.objetos[self.id - 1].next_obj = self
 
     def delete(self):
         """ Permite eliminar el objeto, realiza desasociacion de los
             elementos para poder borrar el objeto
         """
         # Eliminar indice
-        print("ELIMINAR OBJETO ID: " + str(self.id))
-        print("RECONECTAR OBJETO PREV ID: " + str(self.prev_obj.id) + " A NEXT " + str(self.next_obj.id))
+        # print("ELIMINAR OBJETO ID: " + str(self.id) + " " + str(self.text) + " Form: " + str(self.form.nombre))
+        # print("RECONECTAR OBJETO PREV ID: " + str(self.prev_obj.id) + " A NEXT " + str(self.next_obj.id))
         self.prev_obj.next_obj = self.next_obj
-        print("RECONECTAR OBJETO NEXT ID: " + str(self.next_obj.id) + " A PREV " + str(self.prev_obj.id))
+        # print("RECONECTAR OBJETO NEXT ID: " + str(self.next_obj.id) + " A PREV " + str(self.prev_obj.id))
         self.next_obj.prev_obj = self.prev_obj
-        # eliminar label_int
+        self.next_obj = None
+        self.prev_obj = None
+        # Eliminar label
         del self.label_int
         # Eliminar refencia en lista Form objetos
-        print("ELIMINAR REFERENCIA EN FORM OBJETOS: " + str(self.id))
-        self.form.objetos.remove(self)
+        # print("ELIMINAR REFERENCIA EN FORM OBJETOS: " + str(self.id))
+        # self.form.objetos.remove(self)  # no usar sino no se puede sacar del form
+        self.funcion = None
+        self.cuadros_total = None
+        # eliminar superficie
+        self.superficie = None
+
 
     ########################################
     ### LLAMAR PARA ACTUALIZAR DIBUJADO  ###
@@ -148,6 +177,10 @@ class ObjetoGral(object):
     ########################################
     ### METODOS COMUNES                  ###
     ########################################
+    def set_hijo(self):
+        # establece el objeto como hijo (se debe realizar antes del config)
+        self.hijo = True
+
     def set_text(self, text):
         self.text = text
         self.label_int.set_text(text)
@@ -159,6 +192,9 @@ class ObjetoGral(object):
         self.label_int.set_textsize(self.text_size)
         self.line_alto = int(self.text_size * 1.3)
         self.line_rect = 0, 0, self.ancho, self.line_alto
+
+    def set_foco(self):
+        self.evento_foco()
 
     def dibujar(self):
         # Metodo basico por defecto
@@ -174,7 +210,7 @@ class ObjetoGral(object):
             if sedefoco:
                 self.next_obj.evento_foco()
         else:
-            print("FOCO ID: " + str(self.id) + " " + str(self.__class__.__name__))
+            print("FOCO ID: " + str(self.id) + " " + str(self.__class__.__name__) + " Form: " + str(self.form.nombre))
             self.foco = True
             # recuadro
             pygame.draw.rect(self.superficie, self.color_foco, self.rect_foco, 1)  # dibujamos
@@ -182,10 +218,10 @@ class ObjetoGral(object):
 
     def evento_lost_foco(self):
         if not self.sin_foco:
+            # print("LOST FOCO ID: " + str(self.id) + " " + str(self.__class__.__name__) + " Form: " + str(self.form.nombre))
             self.foco = False
             pygame.draw.rect(self.superficie, self.form.color, self.rect_foco, 1)  # dibujamos
-            # print("Actualizar lf")
-            # self.actualizar()
+            self.actualizar()
 
     ###################################
     ### METODOS PARA USUARIO        ###

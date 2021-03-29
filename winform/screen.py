@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### CLASE SCREEN  V1.4                                  ###
+### CLASE SCREEN  V1.5                                  ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
-### 25/03/2021                                          ###
+### 29/03/2021                                          ###
+### Uso de multi form                                   ###
 ### Dibuja solo elementos actualizados y limpia         ###
 ### Dibuja objetos directamente                         ###
 ### Llama al metodo dibujar directamente                ###
@@ -13,9 +14,7 @@
 
 import time
 import pygame
-
 from winform.base.eventos import eventos
-
 import random   # eliminar
 
 class Screen:
@@ -36,8 +35,10 @@ class Screen:
         self.superficie     = ""
         self.cuadros        = []    # lista  de elementos, tupla es con ()
         self.formularios    = []
+        self.cant_form      = 0
         self.resize         = Resize
         self.celular        = Celular
+        self.eventos        = ''
 
         #datos de uso privado
         ancho, alto           = self.resolucion
@@ -81,31 +82,39 @@ class Screen:
 
     def update(self):
         # para tests de elementos que se dibujan
-        # color = (random.randrange(255), random.randrange(255), random.randrange(255))
+        color = (random.randrange(255), random.randrange(255), random.randrange(255))
+        # Para control donde actualiza
         # for cuadro in self.cuadros:
-        #    pygame.draw.rect(self.superficie, color, cuadro, 1)
+        #     pygame.draw.rect(self.superficie, color, cuadro, 1)
         # for formu in self.formularios:
         #    for objeto in formu.objetos:
         #        pygame.draw.rect(self.superficie, color, objeto.rectangulo, 1)
-
         # fin de tests
+        if len(self.formularios) > self.cant_form:  # nuevo form
+            # nuevo formulario - redibujar completo
+            self.cant_form += 1
+            self.dibuja_elementos()
+        elif len(self.formularios) < self.cant_form: # form eliminado
+            # viejo formulario - redibujar completo
+            self.cant_form -= 1
+            self.dibuja_elementos()
+
         pygame.display.update(self.cuadros)
         # vaciamos la lista (se debera crear sobre cada elemento que necesite actualizar)
         self.cuadros.clear()
 
     def dibuja_elementos(self):
-        # recorrer formularios
         for formu in self.formularios:
             print("recorrer formu")
             formu.dibujar()
             # recorrer objetos
             for objeto in formu.objetos:
                 objeto.dibujar()
+                # Agrega el foco inicial en caso de tenerlo
+                if objeto.foco:
+                    objeto.set_foco()
 
     def loop(self):
-        # dibujar elementos
-        self.dibuja_elementos()
-        self.update()
         loope = True
         while loope:
             # eventos devuleve falso cuando hay que salir del programa
@@ -113,3 +122,5 @@ class Screen:
             if loope:
                 self.update()
             time.sleep(0.01)
+
+

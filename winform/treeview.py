@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### CLASE Tree View V1.0                                ###
+### CLASE Tree View V1.1                                ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
-### 23/03/2021                                          ###
+### 29/03/2021                                          ###
+### Correcciones y correcta eliminacion de elementos    ###
 ### Creacion                                            ###
 ###########################################################
 import string
@@ -16,7 +17,7 @@ from winform.base.objetogral import ObjetoGral
 from winform.textbox import Textbox
 from winform.labelicon import LabelIcon
 from winform.base.thread_admin import ThreadAdmin
-
+from winform.base.funciones import AutoBrillo
 
 class TreeView(ObjetoGral):
     def __init__(self, form):
@@ -25,7 +26,7 @@ class TreeView(ObjetoGral):
         self.folder = ""
         self.drives = []  # lista de unidades
         self.ref_label = []  # lista de labeliconos
-        self.info_icons = []  # columna, id_control, texto, ruta, icon, icon2 // sacamos la fila
+        self.info_icons = []  # columna, id_control, texto, ruta, icon, icon2, color // sacamos la fila ,color en caso de requerir distinto
         self.superficie_int = ''  # type: pygame.Surface # modificamos la surface para usar una propia
         self.area_int = (0, 0, 0, 0)  # para definir el area interna relativa, distito a recuadro
         self.y_int = 0  # para desplazar
@@ -41,8 +42,11 @@ class TreeView(ObjetoGral):
         self.area_int = (0, 0, self.ancho, self.alto)
         self.superficie_int = pygame.Surface((self.ancho, self.max_alto))  # dibujamos (cambiar el 1000 todo
         self.y_int = self.y
+        self.color_b3 = AutoBrillo(self.color, 150)
+        self.funcion = ''
 
     def dibujar(self):
+        self.__limpiar_ojetos__()
         self.__cargar_unidades__()
         self.__dibujar__()
 
@@ -51,11 +55,11 @@ class TreeView(ObjetoGral):
         pygame.draw.rect(self.superficie_int, self.color, (0, 0, self.ancho, self.max_alto), 0)
         # generar y cagar labelincon
         for indice in range(len(self.info_icons)):
-            columna, id_control, texto, ruta, icon, icon2 = self.info_icons[indice]
+            columna, id_control, texto, ruta, icon, icon2, color = self.info_icons[indice]
             # creamos y dibujamos el label
-            objeto_id = self.__crear_labelicon__(indice, columna, icon, icon2, texto)
+            objeto_id = self.__crear_labelicon__(indice, columna, icon, icon2, texto, color)
             # actualizamos el el info_icon con el id del control
-            self.info_icons[indice] = columna, objeto_id, texto, ruta, icon, icon2
+            self.info_icons[indice] = [columna, objeto_id, texto, ruta, icon, icon2, color]
         # Dibujar la superficie interna en la general
         self.superficie.blit(self.superficie_int, (self.x, self.y), self.area_int)
         self.actualizar()
@@ -66,30 +70,42 @@ class TreeView(ObjetoGral):
         self.info_icons.clear()
         for fila in range(len(drives)):
             unidad = drives[fila]
-            self.info_icons.append((columna, -1, unidad, unidad, "drive", "circulo"))
+            self.info_icons.append([columna, -1, unidad, unidad, "drive", "circulo", ''])
 
     def __limpiar_ojetos__(self):
-        for label in self.ref_label:
-            label.delete()
+        for indice in range(len(self.ref_label)):
+            self.ref_label[0].delete()    # siempre es 0 porque el delete saca la referencia
+            self.form.objetos.remove(self.ref_label[0])
+            del self.ref_label[0]
         self.ref_label.clear()
 
     def evento_accion(self, id_control):
         # borrar objetos
         self.__limpiar_ojetos__()
-        fila, columna, id_objeto, texto, ruta, ico, icon2 = self.__obtener_info__(id_control)
+        fila, columna, id_objeto, texto, ruta, ico, icon2, color = self.__obtener_info__(id_control)
         # almacenar incial
         info_tmp = self.__caga_inicial__(fila)
         # determinar modificacion
         if icon2 == "flecha_abajo":     # cerrar directorio
             # almacena objeto modificado
-            info_tmp.append((columna, id_objeto, texto, ruta, ico, "flecha_derecha"))
+            info_tmp.append([columna, id_objeto, texto, ruta, ico, "flecha_derecha", self.color_b3])
+            # realizar accion
+            if self.funcion != '':
+                self.funcion(self.id, ruta)
             # almacenar final
             info_tmp.extend(self.__cargar_final2__(fila + 1, columna))
         else:
-            # almacena objeto modificado
-            info_tmp.append((columna, id_objeto, texto, ruta, ico, "flecha_abajo"))
-            # cargar nuevos
-            info_tmp.extend(self.__cargar_nuevos__(ruta, columna + 1))
+            if icon2:   # no es un archivo
+                # almacena objeto modificado
+                info_tmp.append([columna, id_objeto, texto, ruta, ico, "flecha_abajo", self.color_b3])
+                # realizar accion
+                if self.funcion != '':
+                    self.funcion(self.id, ruta)
+                # cargar nuevos
+                info_tmp.extend(self.__cargar_nuevos__(ruta, columna + 1))
+            else:       # es un archivo
+                info_tmp.append([columna, id_objeto, texto, ruta, ico, "", self.color_b3])
+
             # almacenar final
             info_tmp.extend(self.__cargar_final__(fila + 1))
         self.info_icons = []
@@ -100,6 +116,7 @@ class TreeView(ObjetoGral):
         info_tmp = []
         for indice in range(len(self.info_icons)):
             if indice < fila_final:
+                self.info_icons[indice][6] = ''           # vaciamos el color
                 info_tmp.append(self.info_icons[indice])  # devuelve la fila
         return info_tmp
 
@@ -107,7 +124,8 @@ class TreeView(ObjetoGral):
         info_tmp = []
         for indice in range(len(self.info_icons)):
             if indice >= fila_inicial:
-                info_tmp.append((self.info_icons[indice]))  # devuelve la fila
+                self.info_icons[indice][6] = ''  # vaciamos el color
+                info_tmp.append(self.info_icons[indice])  # devuelve la fila
         return info_tmp
 
     def __cargar_final2__(self, fila_inicial, columna_menor):
@@ -115,7 +133,7 @@ class TreeView(ObjetoGral):
         for indice in range(len(self.info_icons)):
             if indice >= fila_inicial:
                 if self.info_icons[indice][0] <= columna_menor:
-                    info_tmp.append((self.info_icons[indice]))  # devuelve la fila
+                    info_tmp.append(self.info_icons[indice])  # devuelve la fila
         return info_tmp
 
     def __cargar_nuevos__(self, ruta, columna):
@@ -129,9 +147,9 @@ class TreeView(ObjetoGral):
             time.sleep(0.1)
         self.th_espera.close()
         for carpeta in self.tmp_carpetas:
-            info_tmp.append((columna, -1, carpeta[0], carpeta[1], "folder", "circulo"))
+            info_tmp.append([columna, -1, carpeta[0], carpeta[1], "folder", "circulo", ''])
         for archivo in self.tmp_archivos:
-            info_tmp.append((columna, -1, archivo[0], archivo[1], "file", ""))
+            info_tmp.append([columna, -1, archivo[0], archivo[1], "file", "", ''])
         return info_tmp
 
     def __th_carpetas_archivos__(self, ruta):
@@ -144,22 +162,28 @@ class TreeView(ObjetoGral):
             print("No se pueden cargar los archivos y carpetas")
         self.datos_obtenidos = True
 
-    def __crear_labelicon__(self, fila, columna, icon, icon2, texto):
+    def __crear_labelicon__(self, fila, columna, icon, icon2, texto, color=''):
         """ Al crear el objeto devolvemos el ID creado
         """
         labelicon = LabelIcon(self.form)
+        labelicon.set_hijo()
+
         if icon2: x = (columna * 20) + 4
         else:     x = (columna * 20) + 20
         y = (fila * 20) + 10
         ancho = 200
         alto = 14
         labelicon.config(texto, x, y, ancho, alto, icon, icon2, self.color)
+        if color:
+            labelicon.color = color
         labelicon.superficie = self.superficie_int
         # cambiamos el rectangulo para cuando revisa el click (posicion real)
         self.__actualizar_poslabel__(labelicon)
         # si es archivo no se asigna accion:
-        if icon2:
-            labelicon.accion(self.evento_accion)
+
+        #if icon2:
+        labelicon.accion(self.evento_accion)
+
         labelicon.dibujar()
         objeto_id = labelicon.id
         # agregamos a la referencia
@@ -171,9 +195,9 @@ class TreeView(ObjetoGral):
         resul = -1
         # buscar control
         for fila, info in enumerate(self.info_icons):
-            columna, id_objeto, texto, ruta, ico, icon2 = info
+            columna, id_objeto, texto, ruta, ico, icon2, color = info
             if id_objeto == id_control:
-                resul = fila, columna, id_objeto, texto, ruta, ico, icon2
+                resul = fila, columna, id_objeto, texto, ruta, ico, icon2, color
                 break
         return resul
 
@@ -195,7 +219,7 @@ class TreeView(ObjetoGral):
         contenido = os.listdir(ruta)
         for item in contenido:
             if os.path.isdir(ruta + item):
-                folders.append((item, ruta + item))
+                folders.append([item, ruta + item])
         return folders
 
     def get_files(self, path):
@@ -206,7 +230,7 @@ class TreeView(ObjetoGral):
         contenido = os.listdir(ruta)
         for item in contenido:
             if os.path.isfile(ruta + item):
-                files.append((item, ruta + item))
+                files.append([item, ruta + item])
         return files
 
     def __desplazar_area__(self, desplazamiento):
@@ -273,6 +297,6 @@ class TreeView(ObjetoGral):
     ###################################
     ### EVENTOS TECLAS              ###
     ###################################
-    def evento_key(self, cod_caracter, caracter):
+    # def evento_key(self, cod_caracter, caracter):
         # pasamos el evento al textbox
-        self.textbox.evento_key(cod_caracter, caracter)
+    #    self.textbox.evento_key(cod_caracter, caracter)

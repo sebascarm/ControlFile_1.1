@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 ###########################################################
-### EVENTOS V1.2                                        ###
+### EVENTOS V1.3                                        ###
 ###########################################################
 ### ULTIMA MODIFICACION DOCUMENTADA                     ###
-### 10/03/2021                                          ###
+### 29/03/2021                                          ###
+### Uso de multiform, solo aplica el form superior      ###
 ### Evento mouse scroll y se analiza estado -1 (nuevo)  ###
 ### Se incorporta evento click release                  ###
 ### Se ocultan algunos prints para hacer un mejor dbug  ###
@@ -29,16 +30,19 @@ def eventos(c_screen):
         if evento.type == pygame.VIDEORESIZE:
             print("Evento resize pendiente")
         # eventos de posicion (recorrer formularios)
-        for formu in c_screen.formularios:
+        # recorremos los formularios en orden inverso,
+        # solo aplicamos eventos en el ultimo formulario existente
+        for formu in reversed(c_screen.formularios):
             # recorrer objetos
             salir_de_evento = False
             for objeto in formu.objetos:
                 if not salir_de_evento:
                     salir_de_evento = evento_objeto(evento, objeto)
-                
+            break
+
     #repeticion_tecla()
     return True
-    
+
 def evento_objeto(event, objeto):
     # Moviemiento de mouse
     if event.type == pygame.MOUSEMOTION:
